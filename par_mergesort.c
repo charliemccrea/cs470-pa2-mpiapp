@@ -39,6 +39,7 @@ count_t  shift_n;	// global left shift offset
 count_t *hist;		// histogram (counts of "nums" in bins)
 
 int *local_vals;
+count_t *local_hist;
 int my_rank;
 int nprocs;
 count_t local_n;
@@ -84,6 +85,12 @@ void initialize_data_structures()
 		exit(EXIT_FAILURE);
 	}
 	hist = (count_t*)calloc(BINS, sizeof(count_t));
+	if (hist == NULL)
+	{
+		fprintf(stderr, "Out of memory!\n");
+		exit(EXIT_FAILURE);
+	}
+	local_hist = (count_t*)calloc(BINS, sizeof(count_t));
 	if (hist == NULL)
 	{
 		fprintf(stderr, "Out of memory!\n");
@@ -204,15 +211,14 @@ void randomize()
 		nums[i] = rand() % RMAX;
 	}
 
-	MPI_Scatter(nums, global_n/nprocs, MPI_INT,
-          local_vals, global_n/nprocs, MPI_INT, 0, MPI_COMM_WORLD);
+	MPI_Scatter(nums, local_n, MPI_INT,
+          local_vals, local_n, MPI_INT, 0, MPI_COMM_WORLD);
 
 #   ifdef DEBUG
 	if (my_rank == 0) printf("\nglobal_n = %lu\n", global_n);
 	if (my_rank == 0) printf("nprocs   = %d\n", nprocs);
-#	endif
-
 	dump_global_array("local_vals", local_vals, local_n);
+#	endif
 }
 
 /*
@@ -222,8 +228,10 @@ void histogram()
 {
 	for (count_t i = 0; i < global_n; i++)
 	{
-		hist[nums[i] % BINS]++;
+		local_hist[nums[i] % BINS]++;
 	}
+
+	MPI_Reduce(local_hist, hist, local_n, MPI_UNSIGNED_LONG_LONG, MPI_SUM, 0, MPI_COMM_WORLD);
 }
 
 /*
@@ -313,7 +321,8 @@ int main(int argc, char *argv[])
 	STOP_TIMER(hist)
 
 	// print histogram
-	//printf("GLOBAL hist: "); print_counts(hist, BINS);
+	if (my_rank == 0) printf("GLOBAL hist: ");
+	if (my_rank == 0) print_counts(hist, BINS);
 
 	// perform left shift
 	START_TIMER(shft)
