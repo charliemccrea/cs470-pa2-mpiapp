@@ -41,6 +41,7 @@ count_t *hist;		// histogram (counts of "nums" in bins)
 int *local_vals;
 int my_rank;
 int nprocs;
+count_t local_n;
 
 /*
  * Parse and handle command-line parameters. Returns true if parameters were
@@ -128,7 +129,8 @@ void print_counts(count_t *a, count_t n)
 int* allocate(int size)
 {
     int *arr = (int*)malloc(sizeof(int) * size);
-    if (!arr) {
+    if (!arr)
+	{
         printf("ERROR: out of memory!\n");
         exit(EXIT_FAILURE);
     }
@@ -144,17 +146,21 @@ void dump_global_array(const char *label, int *arr, int size)
     int tmp[size*nprocs];
     MPI_Gather(arr, size, MPI_INT,
                tmp, size, MPI_INT, 0, MPI_COMM_WORLD);
-    if (my_rank == 0) {
+    if (my_rank == 0)
+	{
         printf("%s: ", label);
-        for (int i = 0; i < size*nprocs; i++) {
-            if (i % global_n == 0) {
+        for (int i = 0; i < size*nprocs; i++)
+		{
+            if (i % size == 0)
+			{
                 printf("[ ");
             }
             printf("%2d ", tmp[i]);
-            if (i % global_n == global_n-1) {
+            if (i % size == size-1)
+			{
                 printf("] ");
             }
-	}
+		}
 	printf("\n");
     }
 }
@@ -204,7 +210,7 @@ void randomize()
 	if (my_rank == 0) printf("\nglobal_n = %lu\n", global_n);
 	if (my_rank == 0) printf("nprocs   = %d\n", nprocs);
 
-	dump_global_array("local_vals", local_vals, global_n);
+	dump_global_array("local_vals", local_vals, local_n);
 }
 
 /*
@@ -286,6 +292,7 @@ int main(int argc, char *argv[])
 	MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
     MPI_Comm_size(MPI_COMM_WORLD, &nprocs);
 
+	local_n = global_n/nprocs;
 	local_vals = allocate(global_n);
 
 	// initialize random numbers
@@ -294,7 +301,8 @@ int main(int argc, char *argv[])
 	STOP_TIMER(rand)
 
 #   ifdef DEBUG
-	if (my_rank == 0) printf("\nglobal orig list: "); print_nums(nums, global_n);
+	if (my_rank == 0) printf("\nglobal orig list: ");
+	if (my_rank == 0) print_nums(nums, global_n);
 #   endif
 
 	// compute histogram
