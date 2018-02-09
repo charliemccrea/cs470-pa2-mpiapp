@@ -207,8 +207,10 @@ void randomize()
 	MPI_Scatter(nums, global_n/nprocs, MPI_INT,
           local_vals, global_n/nprocs, MPI_INT, 0, MPI_COMM_WORLD);
 
+#   ifdef DEBUG
 	if (my_rank == 0) printf("\nglobal_n = %lu\n", global_n);
 	if (my_rank == 0) printf("nprocs   = %d\n", nprocs);
+#	endif
 
 	dump_global_array("local_vals", local_vals, local_n);
 }
