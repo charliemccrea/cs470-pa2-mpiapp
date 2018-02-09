@@ -215,8 +215,6 @@ void randomize()
           local_vals, local_n, MPI_INT, 0, MPI_COMM_WORLD);
 
 #   ifdef DEBUG
-	if (my_rank == 0) printf("\nglobal_n = %lu\n", global_n);
-	if (my_rank == 0) printf("nprocs   = %d\n", nprocs);
 	dump_global_array("local_vals", local_vals, local_n);
 #	endif
 }
