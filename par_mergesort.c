@@ -47,11 +47,11 @@ count_t  global_n;	 // global "nums" count
 count_t  shift_n;	 // global left shift offset
 count_t *hist;		 // histogram (counts of "nums" in bins)
 
-int my_rank;         // mpi rank
-int nprocs;          // number of processes used by program
-int *local_vals;     // local numbers
+int my_rank;		 // mpi rank
+int nprocs;		  	 // number of processes used by program
+int *local_vals;	 // local numbers
 count_t *local_hist; // local histogram
-count_t local_n;     // global nums count divided by process count
+count_t local_n;	 // global nums count divided by process count
 
 /*
  * Parse and handle command-line parameters. Returns true if parameters were
@@ -144,14 +144,14 @@ void print_counts(count_t *a, count_t n)
  */
 int* allocate(int size)
 {
-    int *arr = (int*)malloc(sizeof(int) * size);
-    if (!arr)
+	int *arr = (int*)malloc(sizeof(int) * size);
+	if (!arr)
 	{
-        printf("ERROR: out of memory!\n");
-        exit(EXIT_FAILURE);
-    }
-    memset(arr, 0, sizeof(int) * size);
-    return arr;
+		printf("ERROR: out of memory!\n");
+		exit(EXIT_FAILURE);
+	}
+	memset(arr, 0, sizeof(int) * size);
+	return arr;
 }
 
 /*
@@ -159,26 +159,26 @@ int* allocate(int size)
  */
 void dump_global_array(const char *label, int *arr, int size)
 {
-    int tmp[size*nprocs];
-    MPI_Gather(arr, size, MPI_INT,
-               tmp, size, MPI_INT, 0, MPI_COMM_WORLD);
-    if (my_rank == 0)
+	int tmp[size*nprocs];
+	MPI_Gather(arr, size, MPI_INT,
+			   tmp, size, MPI_INT, 0, MPI_COMM_WORLD);
+	if (my_rank == 0)
 	{
-        printf("%s: ", label);
-        for (int i = 0; i < size*nprocs; i++)
+		printf("%s: ", label);
+		for (int i = 0; i < size*nprocs; i++)
 		{
-            if (i % size == 0)
+			if (i % size == 0)
 			{
-                printf("[ ");
-            }
-            printf("%2d ", tmp[i]);
-            if (i % size == size-1)
+				printf("[ ");
+			}
+			printf("%2d ", tmp[i]);
+			if (i % size == size-1)
 			{
-                printf("] ");
-            }
+				printf("] ");
+			}
 		}
 	printf("\n");
-    }
+	}
 }
 
 /*
@@ -222,7 +222,7 @@ void randomize()
 
 	// distribute data to all processes
 	MPI_Scatter(nums, local_n, MPI_INT,
-          local_vals, local_n, MPI_INT, 0, MPI_COMM_WORLD);
+		  local_vals, local_n, MPI_INT, 0, MPI_COMM_WORLD);
 
 	// print a summary of process data
 #   ifdef DEBUG
@@ -312,7 +312,7 @@ int main(int argc, char *argv[])
 	// initialize mpi
 	MPI_Init(&argc, &argv);
 	MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
-    MPI_Comm_size(MPI_COMM_WORLD, &nprocs);
+	MPI_Comm_size(MPI_COMM_WORLD, &nprocs);
 	local_n = global_n/nprocs;
 	local_vals = allocate(global_n);
 
