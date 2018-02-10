@@ -21,7 +21,7 @@
 #define RMAX 100
 
 // enable debug output
-#define DEBUG
+//#define DEBUG
 
 // timing macros (must first declare "struct timeval tv")
 #define START_TIMER(NAME) gettimeofday(&tv, NULL); \
@@ -33,16 +33,16 @@
 // "count_t" used for number counts that could become quite high
 typedef unsigned long count_t;
 
-int *nums;			// random numbers
-count_t  global_n;	// global "nums" count
-count_t  shift_n;	// global left shift offset
-count_t *hist;		// histogram (counts of "nums" in bins)
+int *nums;			 // random numbers
+count_t  global_n;	 // global "nums" count
+count_t  shift_n;	 // global left shift offset
+count_t *hist;		 // histogram (counts of "nums" in bins)
 
-int *local_vals;
-count_t *local_hist;
-int my_rank;
-int nprocs;
-count_t local_n;
+int my_rank;         // mpi rank
+int nprocs;          // number of processes used by program
+int *local_vals;     // local numbers
+count_t *local_hist; // local histogram
+count_t local_n;     // global nums count divided by process count
 
 /*
  * Parse and handle command-line parameters. Returns true if parameters were
@@ -211,9 +211,11 @@ void randomize()
 		nums[i] = rand() % RMAX;
 	}
 
+	// distribute data to all processes
 	MPI_Scatter(nums, local_n, MPI_INT,
           local_vals, local_n, MPI_INT, 0, MPI_COMM_WORLD);
 
+	// print a summary of process data
 #   ifdef DEBUG
 	dump_global_array("local_vals", local_vals, local_n);
 #	endif
@@ -229,6 +231,7 @@ void histogram()
 		local_hist[nums[i] % BINS]++;
 	}
 
+	// take the sum of all histograms and reduce them into the global histogram
 	MPI_Reduce(local_hist, hist, local_n, MPI_UNSIGNED_LONG_LONG, MPI_SUM, 0, MPI_COMM_WORLD);
 }
 
@@ -288,18 +291,19 @@ int main(int argc, char *argv[])
 	// utility struct for timing calls
 	struct timeval tv;
 
+	// parse command line
 	if (!parse_command_line(argc, argv))
 	{
 		exit(EXIT_FAILURE);
 	}
 
+	// initialize nums, hist, and local_hist
 	initialize_data_structures();
 
 	// initialize mpi
 	MPI_Init(&argc, &argv);
 	MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
     MPI_Comm_size(MPI_COMM_WORLD, &nprocs);
-
 	local_n = global_n/nprocs;
 	local_vals = allocate(global_n);
 
@@ -308,6 +312,7 @@ int main(int argc, char *argv[])
 	randomize();
 	STOP_TIMER(rand)
 
+	// print global original list
 #   ifdef DEBUG
 	if (my_rank == 0) printf("\nglobal orig list: ");
 	if (my_rank == 0) print_nums(nums, global_n);
@@ -327,8 +332,10 @@ int main(int argc, char *argv[])
 	shift_left();
 	STOP_TIMER(shft)
 
+	// print global shifted list
 #   ifdef DEBUG
-	//printf("global shft list: "); print_nums(nums, global_n);
+	if (my_rank == 0) printf("global shft list: ");
+	if (my_rank == 0) print_nums(nums, global_n);
 #   endif
 
 	// perform merge sort
@@ -338,13 +345,11 @@ int main(int argc, char *argv[])
 
 	// print global results
 #   ifdef DEBUG
-	//printf("GLOBAL list: "); print_nums(nums, global_n);
+	if (my_rank == 0) printf("GLOBAL list: ");
+	if (my_rank == 0) print_nums(nums, global_n);
 #   endif
-	//printf("RAND: %.4f  HIST: %.4f  SHFT: %.4f  SORT: %.4f\n",
-	//		GET_TIMER(rand), GET_TIMER(hist), GET_TIMER(shft), GET_TIMER(sort));
-#	ifdef DEBUG
-	printf("\n");
-#	endif
+	if (my_rank == 0) printf("RAND: %.4f  HIST: %.4f  SHFT: %.4f  SORT: %.4f\n",
+			GET_TIMER(rand), GET_TIMER(hist), GET_TIMER(shft), GET_TIMER(sort));
 
 	// clean up and exit
 	MPI_Finalize();
