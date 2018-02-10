@@ -5,6 +5,15 @@
  * Parallel version.
  *
  * Name(s): Charlie McCrea, Bikash Adhikari
+ *
+ * Notes:
+ * We had some difficulty while developing this program. When we try to run the prgoram with a num
+ * count more than eight times the number of processes (eg. 512 numbers on 32 processes) we receive
+ * a seg fault. Extensive debugging has proved unsuccessful in solving this.
+ *
+ * Analysis:
+ * Analyzing this program was difficult due to the limiations noted above. The largest number count
+ * we can run is 1024, using all 128 processes available, meaning we cannot run largescale tests.
  */
 
 #include <stdbool.h>
